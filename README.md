@@ -14,6 +14,8 @@ A comprehensive demonstration of **AI-powered analytics with persistent memory**
 
 **Memory Box** is a proven AI memory solution that has been successfully deployed in production environments to enhance the value and effectiveness of AI interactions. Originally developed as a standalone platform, Memory Box has now been **architected specifically for enterprise use on Snowflake**, bringing enterprise-grade security, scalability, and performance to AI-powered analytics.
 
+🎧 **[Listen: Memory Box on Snowflake Podcast](https://static.amotivv.io/cdn/memory-box-on-snowflake.mp3)** - Deep dive into the philosophy and technical architecture
+
 ### Why Memory Box on Snowflake?
 
 - **🔒 Enterprise Security**: Memory data never leaves your Snowflake environment, ensuring maximum data security and compliance

@@ -155,6 +155,8 @@ Memory Box on Snowflake supports three enterprise deployment models:
 
 ## Getting Started
 
+🎧 **[Listen: Memory Box on Snowflake Podcast](https://static.amotivv.io/cdn/memory-box-on-snowflake.mp3)** - Complete overview of philosophy, architecture, and enterprise benefits
+
 ### Evaluation Phase
 1. **Review Architecture** - Understand how Memory Box integrates with Snowflake
 2. **Assess Requirements** - Determine which deployment model fits your needs
