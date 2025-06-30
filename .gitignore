@@ -174,7 +174,11 @@ MAIN_VS_SPCS_COMPARISON.md
 docker/
 spcs/
 
+# Internal docs (keep private)
 docs/
+
+# Public deployment docs (include in repo)
+!deployment-docs/
 
 # Any backup files
 *.backup
