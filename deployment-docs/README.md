@@ -12,6 +12,7 @@ Memory Box brings the revolutionary "Don't organize, just ask" philosophy to Sno
 
 ### 🎯 **For Decision Makers**
 - [Memory Box on Snowflake Overview](./memory-box-snowflake.md) - Philosophy, benefits, and value proposition
+- [Enterprise Use Cases](./USE_CASES.md) - Real-world use cases and advanced analytical workflows
 - [Enterprise Deployment Models](./enterprise-deployment.md) - Three deployment options for different enterprise scenarios
 - [Analytics Transformation](./analytics-transformation.md) - How Memory Box changes analytics workflows
 
