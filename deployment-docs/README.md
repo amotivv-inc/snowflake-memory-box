@@ -6,6 +6,8 @@ Welcome to the comprehensive deployment documentation for Memory Box on Snowflak
 
 Memory Box brings the revolutionary "Don't organize, just ask" philosophy to Snowflake analytics. Instead of organizing analysis results into complex folder structures or tagging systems, Memory Box allows you to capture insights instantly during analysis and retrieve them through natural language when you need them—all within your secure Snowflake environment.
 
+🎧 **[Listen: Memory Box on Snowflake Podcast](https://static.amotivv.io/cdn/memory-box-on-snowflake.mp3)** - Hear the complete story behind Memory Box's Snowflake-native architecture and philosophy.
+
 ## Documentation Overview
 
 ### 🎯 **For Decision Makers**
