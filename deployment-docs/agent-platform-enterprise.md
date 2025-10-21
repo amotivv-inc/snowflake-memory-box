@@ -45,7 +45,7 @@ graph TB
     
     subgraph "Agent Layer"
         RiskAgent[Risk Assessment Agent]
-        FraudAgent[Fraud Detection Agent]
+        ObservabilityAgent[AI Observability Agent]
         ComplianceAgent[Compliance Agent]
         AnalystAgent[Business Analyst Agent]
     end
@@ -60,7 +60,7 @@ graph TB
     SemanticIndex --> Future
     
     Claude --> RiskAgent
-    GPT --> FraudAgent
+    GPT --> ObservabilityAgent
     Gemini --> ComplianceAgent
     Llama --> AnalystAgent
 ```
@@ -94,6 +94,17 @@ Memory Box's **LLM-agnostic semantic memory** solves these challenges by providi
 
 ### **Semantic Memory Architecture**
 
+Memory Box provides an advanced semantic memory foundation with enterprise-grade search capabilities:
+
+**Core Capabilities:**
+- **Hybrid Search**: Combines vector similarity with keyword boosting for optimal results
+- **Semantic Search**: Find memories based on meaning, not just keywords
+- **Related Memories**: Automatically identifies and links semantically similar memories
+- **Dual-Track Architecture**: Supports both pre-formatted and raw content memory sources
+- **Date-Sorted Results**: Option to sort semantically relevant results chronologically (critical for financial audit trails)
+- **Fallback Mechanisms**: Automatically falls back to text search if semantic search yields no results
+- **Debug Mode**: Full transparency with detailed search debug information
+
 ```mermaid
 graph TB
     subgraph "Universal Semantic Layer"
@@ -101,12 +112,14 @@ graph TB
             VectorDB[(Vector Storage<br/>Snowflake Native)]
             MetadataDB[(Metadata & Tags<br/>Structured Storage)]
             GraphDB[(Relationship Graph<br/>Memory Connections)]
+            BucketDB[(Memory Buckets<br/>Organized Collections)]
         end
         
         subgraph "Memory Operations"
-            Ingestion[Memory Ingestion]
-            Retrieval[Semantic Retrieval]
+            Ingestion[Memory Ingestion<br/>Async Processing]
+            Retrieval[Hybrid Search<br/>Vector + Keywords]
             Evolution[Memory Evolution]
+            Related[Related Memory<br/>Discovery]
         end
         
         subgraph "LLM Adapters"
@@ -182,45 +195,87 @@ The foundation of Memory Box is the **Memory Pod Fabric** - a distributed semant
 
 **Risk Assessment Pod**
 - **Purpose**: Credit risk analysis and portfolio assessment
+- **Memory Organization**: Customizable buckets for risk categories, customer segments, product lines
 - **Memory Types**: Historical risk patterns, regulatory interpretations, market conditions, decision precedents
-- **Agent Capabilities**: Adaptive risk scoring, behavioral pattern recognition, regulatory compliance monitoring
+- **Agent Capabilities**: Adaptive risk scoring, behavioral pattern recognition, regulatory compliance monitoring, related risk discovery
+- **Advanced Features**:
+  - Asynchronous processing for complex risk calculations
+  - Automatic discovery of related risk patterns
+  - Date-sorted audit trails for regulatory compliance
+  - Debug mode for risk decision transparency
 - **LLM Strategy**: Snowflake Cortex for standard analysis, GPT-4 for complex edge cases
-- **Snowflake Integration**: Native Cortex AI functions, vector storage, real-time data processing
+- **Snowflake Integration**: Native Cortex AI functions, vector storage, data processing pipelines
 
-**Fraud Detection Pod**
-- **Purpose**: Real-time transaction monitoring and fraud prevention
-- **Memory Types**: Fraud patterns, customer behavior baselines, suspicious activity indicators, investigation outcomes
-- **Agent Capabilities**: Anomaly detection, behavioral analysis, pattern matching, alert generation
-- **LLM Strategy**: Fast models (Claude/Llama) for real-time decisions, deep models for investigation
-- **Snowflake Integration**: Streaming data processing, vector similarity search, automated alerting
+**AI Observability Pod**
+- **Purpose**: Systematic evaluation and monitoring of AI agents and applications
+- **Memory Organization**: Dedicated buckets per agent, model, and evaluation type
+- **Memory Types**: Performance metrics, evaluation results, trace histories, model comparisons, cost analytics
+- **Agent Capabilities**: LLM-as-a-judge evaluations, trace analysis, performance benchmarking, model comparison
+- **Advanced Features**:
+  - Usage tracking and analytics dashboards
+  - Plan management for different service tiers
+  - Automated performance anomaly detection
+  - Cost optimization recommendations
+- **LLM Strategy**: Cortex AI for systematic evaluations, multiple models for consensus scoring
+- **Snowflake Integration**: TruLens integration, event tables for trace storage, automated evaluation tasks
+- **Key Metrics**: 
+  - Context relevance scoring for RAG applications
+  - Answer relevance and groundedness metrics
+  - Latency and cost optimization tracking
+  - Multi-model performance comparison
+  - Comprehensive trace debugging
 
 **Compliance Monitoring Pod**
 - **Purpose**: Automated regulatory compliance and reporting
+- **Memory Organization**: Regulatory framework buckets, jurisdiction-specific collections
 - **Memory Types**: Regulatory requirements, interpretation changes, compliance history, audit findings
 - **Agent Capabilities**: Rule monitoring, automated reporting, regulatory change adaptation, audit support
+- **Advanced Features**:
+  - Dual-track processing for structured and unstructured compliance documents
+  - Related regulation discovery across jurisdictions
+  - Fallback mechanisms for compliance verification
+  - Admin dashboard for compliance oversight
 - **LLM Strategy**: Self-hosted models for sensitive compliance data, external models for research
 - **Snowflake Integration**: Document processing, audit trail generation, compliance dashboards
 
 **Business Intelligence Pod**
 - **Purpose**: Analytical insights and predictive modeling
+- **Memory Organization**: Department-specific buckets, shared insight repositories
 - **Memory Types**: Analytical insights, data patterns, prediction outcomes, analyst learnings
-- **Agent Capabilities**: Behavioral prediction, trend analysis, recommendation generation
+- **Agent Capabilities**: Behavioral prediction, trend analysis, recommendation generation, insight synthesis
+- **Advanced Features**:
+  - Hybrid search combining semantic understanding with business metrics
+  - Automatic relationship mapping between insights
+  - Integration support for BI tools and dashboards
+  - Collaborative analysis with shared buckets
 - **LLM Strategy**: Cost-optimized model selection based on query complexity
 - **Snowflake Integration**: Customer data platforms, analytics workflows, visualization integration
 
 ### **Agent Memory Schema**
 
 ```sql
--- Universal agent memory schema supporting any LLM
+-- Universal agent memory schema supporting any LLM with Memory Box features
 CREATE OR REPLACE TABLE agent_memory_objects (
     memory_id STRING NOT NULL,
     agent_id STRING NOT NULL,
-    memory_pod STRING NOT NULL,  -- 'risk', 'fraud', 'compliance', 'intelligence'
+    memory_pod STRING NOT NULL,  -- 'risk', 'observability', 'compliance', 'intelligence'
+    
+    -- Memory Organization
+    bucket_name STRING,  -- Customizable bucket for organization
+    bucket_owner STRING,  -- Owner of the bucket for shared contexts
+    created_by STRING,  -- Who created this memory (user attribution)
     
     -- Content and embedding (LLM-agnostic)
     memory_content TEXT NOT NULL,
     memory_vector VECTOR(FLOAT, 768) NOT NULL,
     memory_summary TEXT,
+    memory_content_raw TEXT,  -- Raw content for dual-track processing
+    processing_status STRING DEFAULT 'completed',  -- 'pending', 'processing', 'completed', 'failed'
+    
+    -- Related Memories
+    related_memory_ids ARRAY,  -- Semantically similar memories
+    parent_memory_id STRING,  -- For hierarchical memory structures
+    similarity_scores OBJECT,  -- Scores for related memories
     
     -- Model tracking
     created_by_model STRING,  -- e.g., 'claude-3.5-sonnet', 'gpt-4', 'llama-3-70b'
@@ -228,14 +283,20 @@ CREATE OR REPLACE TABLE agent_memory_objects (
     model_consensus_score FLOAT,  -- Agreement across models on importance
     
     -- Semantic metadata
-    memory_type STRING NOT NULL,  -- 'insight', 'pattern', 'decision', 'fact'
+    memory_type STRING NOT NULL,  -- 'insight', 'pattern', 'decision', 'fact', 'knowledge'
     memory_metadata OBJECT,
     semantic_tags ARRAY,
+    keyword_boost_terms ARRAY,  -- Keywords for hybrid search boosting
     
     -- Agent learning
     decision_context OBJECT,
     learning_data OBJECT,
     effectiveness_score FLOAT,
+    
+    -- Search and Retrieval
+    search_rank_boost FLOAT DEFAULT 1.0,  -- Boost factor for hybrid search
+    date_relevance_score FLOAT,  -- For date-sorted semantic results
+    debug_info OBJECT,  -- Debug information for transparency
     
     -- Timestamps and access patterns
     created_timestamp TIMESTAMP_NTZ NOT NULL,
@@ -243,14 +304,32 @@ CREATE OR REPLACE TABLE agent_memory_objects (
     access_frequency INTEGER DEFAULT 0,
     model_access_patterns OBJECT,  -- Track usage by model
     
+    -- Usage Analytics
+    usage_metrics OBJECT,  -- Detailed usage statistics
+    api_calls_count INTEGER DEFAULT 0,
+    tokens_processed INTEGER DEFAULT 0,
+    cost_accumulated DECIMAL(10,4) DEFAULT 0,
+    
+    -- Plan Management
+    service_tier STRING DEFAULT 'professional',  -- 'professional', 'enterprise', 'enterprise_plus'
+    quota_remaining OBJECT,  -- Remaining quotas for current tier
+    
     -- Compliance and audit
     audit_trail OBJECT,
     compliance_classification STRING,
     retention_policy STRING DEFAULT 'business_standard',
+    deletion_scheduled TIMESTAMP_NTZ,  -- For GDPR compliance
     
-    PRIMARY KEY (memory_id)
+    PRIMARY KEY (memory_id),
+    FOREIGN KEY (parent_memory_id) REFERENCES agent_memory_objects(memory_id)
 ) 
-CLUSTER BY (agent_id, memory_pod, created_timestamp);
+CLUSTER BY (agent_id, memory_pod, bucket_name, created_timestamp);
+
+-- Index for efficient related memory queries
+CREATE INDEX idx_related_memories ON agent_memory_objects(memory_id, related_memory_ids);
+
+-- Index for bucket-based queries
+CREATE INDEX idx_bucket_access ON agent_memory_objects(bucket_name, bucket_owner, created_by);
 ```
 
 ### **LLM Adapter Pattern**
@@ -307,13 +386,14 @@ graph TB
     subgraph "Customer Snowflake Environment - Complete Data Sovereignty"
         subgraph "Data Layer"
             CustomerData[(Customer Data)]
-            TransactionData[(Transaction Data)]
+            AnalyticsData[(Analytics Data)]
             RegulatoryData[(Regulatory Data)]
+            EvaluationData[(Evaluation Data)]
         end
         
         subgraph "Memory Pod Fabric"
             RiskPod[Risk Assessment Pod]
-            FraudPod[Fraud Detection Pod]
+            ObservabilityPod[AI Observability Pod]
             CompliancePod[Compliance Pod]
             IntelligencePod[Business Intelligence Pod]
         end
@@ -344,11 +424,12 @@ graph TB
     end
     
     CustomerData --> RiskPod
-    TransactionData --> FraudPod
+    AnalyticsData --> IntelligencePod
     RegulatoryData --> CompliancePod
+    EvaluationData --> ObservabilityPod
     
     RiskPod --> AgentOrchestrator
-    FraudPod --> AgentOrchestrator
+    ObservabilityPod --> AgentOrchestrator
     CompliancePod --> AgentOrchestrator
     IntelligencePod --> AgentOrchestrator
     
@@ -390,6 +471,224 @@ graph TB
 - **External LLMs** - Only when explicitly configured, prompt-only transmission
 - **No Data Export** - Zero raw data movement outside customer's Snowflake account
 - **Complete Control** - Customer decides which LLMs to use for which tasks
+
+---
+
+## **Enterprise Collaboration & Governance**
+
+### **Shared Memory Buckets for Cross-Organization Collaboration**
+
+Memory Box enables secure cross-team and cross-organization memory sharing while maintaining complete data sovereignty within Snowflake:
+
+#### **Shared Bucket Architecture**
+
+```sql
+-- Shared bucket permissions for enterprise collaboration
+CREATE OR REPLACE TABLE bucket_permissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bucket_name STRING NOT NULL,
+    bucket_owner STRING NOT NULL,
+    shared_with_user_id STRING NOT NULL,
+    permission_level STRING NOT NULL CHECK (permission_level IN ('read_only', 'read_write', 'admin')),
+    granted_by STRING NOT NULL,
+    granted_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
+    
+    -- Additional enterprise fields
+    organization_unit STRING,
+    data_classification STRING,
+    audit_requirements OBJECT,
+    
+    UNIQUE(bucket_name, bucket_owner, shared_with_user_id)
+);
+
+-- Track memory attribution in shared contexts
+ALTER TABLE agent_memory_objects ADD COLUMN IF NOT EXISTS created_by STRING;
+ALTER TABLE agent_memory_objects ADD COLUMN IF NOT EXISTS bucket_name STRING;
+ALTER TABLE agent_memory_objects ADD COLUMN IF NOT EXISTS related_memory_ids ARRAY;
+```
+
+#### **Permission Levels**
+
+1. **Owner**: Full control over bucket and permissions
+2. **Admin**: Can manage memories and grant permissions to others
+3. **Read-Write**: Can add, edit, and view memories
+4. **Read-Only**: Can only view memories
+
+#### **Enterprise Use Cases for Shared Buckets**
+
+**Cross-Team Risk Intelligence**
+- Risk assessment teams share emerging patterns
+- Compliance teams access risk findings instantly
+- Audit teams have read-only access to all assessments
+- Executive dashboards pull from shared intelligence
+
+**Research Collaboration**
+- Research agents share market insights across departments
+- Investment teams collaborate on opportunity analysis
+- Legal teams contribute regulatory interpretations
+- All teams benefit from accumulated knowledge
+
+**Customer 360 Intelligence**
+- Sales teams share customer interaction memories
+- Support teams access complete customer context
+- Marketing teams understand customer preferences
+- Finance teams see payment patterns and credit history
+
+### **Governance Framework**
+
+```sql
+-- Comprehensive audit trail for shared memories
+CREATE OR REPLACE VIEW shared_memory_audit AS
+SELECT 
+    m.memory_id,
+    m.bucket_name,
+    m.created_by as original_creator,
+    m.created_by_model,
+    bp.bucket_owner,
+    bp.shared_with_user_id,
+    bp.permission_level,
+    m.created_timestamp,
+    m.last_accessed_timestamp,
+    m.access_frequency,
+    
+    -- Compliance tracking
+    m.compliance_classification,
+    m.audit_trail,
+    
+    -- Usage analytics
+    ARRAY_SIZE(m.accessed_by_models) as models_accessed,
+    ARRAY_SIZE(m.related_memory_ids) as related_memories_count
+    
+FROM agent_memory_objects m
+JOIN bucket_permissions bp 
+    ON m.bucket_name = bp.bucket_name
+WHERE m.bucket_name IS NOT NULL
+ORDER BY m.created_timestamp DESC;
+```
+
+---
+
+## **Advanced Enterprise Use Cases**
+
+### **Knowledge Agents for Institutional Memory**
+
+Memory Box enables organizations to create **persistent knowledge agents** that maintain institutional memory across personnel changes:
+
+```
+Configuration:
+- Onboarding Agent: Captures expertise from departing employees
+- Knowledge Synthesis Agent: Consolidates insights across teams
+- Decision History Agent: Maintains rationale for key decisions
+- Regulatory Evolution Agent: Tracks interpretation changes over time
+
+Memory Architecture:
+- Hierarchical bucket structure by department/function
+- Cross-referenced memories for related decisions
+- Temporal tracking for regulatory evolution
+- Semantic clustering for knowledge discovery
+
+Business Value:
+- Zero knowledge loss during employee transitions
+- Instant onboarding with complete context
+- Consistent decision-making across teams
+- Regulatory compliance with full audit trail
+```
+
+### **Research Agents for Continuous Intelligence**
+
+Organizations can deploy **autonomous research agents** that continuously gather and synthesize information:
+
+```
+Agent Capabilities:
+- Market Research Agent: Monitors trends and competitor activities
+- Regulatory Research Agent: Tracks new regulations and interpretations
+- Technology Research Agent: Identifies emerging technologies
+- Customer Research Agent: Synthesizes feedback and preferences
+
+Memory Features:
+- Automatic relationship discovery between research findings
+- Date-sorted insights for trend analysis
+- Related memory clustering for pattern recognition
+- Debug mode for research validation
+
+Implementation:
+- Asynchronous processing for continuous updates
+- Hybrid search for precise information retrieval
+- Fallback mechanisms ensure reliable operation
+- Usage analytics track research ROI
+```
+
+### **Customer Support Enhancement**
+
+Transform customer support with **persistent memory across all interactions**:
+
+```
+Support Memory System:
+- Issue Resolution Memory: Past problems and solutions
+- Customer Preference Memory: Individual customer needs
+- Product Knowledge Memory: Deep product expertise
+- Escalation Pattern Memory: When and how to escalate
+
+Advanced Features:
+- Semantic search finds similar past issues instantly
+- Related memories suggest additional solutions
+- Shared buckets enable team collaboration
+- Debug mode provides transparency for customers
+
+Results:
+- 70% reduction in resolution time
+- 85% first-contact resolution rate
+- 95% customer satisfaction improvement
+- Complete audit trail for compliance
+```
+
+### **Autonomous Development Agents**
+
+Enable agents that pursue **self-directed learning** and develop original contributions:
+
+```
+Development Agent Types:
+- Strategy Development: Evolves business strategies based on outcomes
+- Process Optimization: Continuously improves workflows
+- Model Training: Self-improves through feedback loops
+- Innovation Discovery: Identifies new opportunities
+
+Learning Architecture:
+- Dual-track processing for experimentation
+- Related memory discovery for innovation
+- Effectiveness scoring for self-evaluation
+- Model consensus for validation
+
+Governance:
+- Controlled experimentation within boundaries
+- Audit trail for all autonomous decisions
+- Human-in-the-loop for critical changes
+- Compliance checks at every step
+```
+
+### **Content Creation with Contextual Intelligence**
+
+Maintain **relationships between content pieces** for sophisticated content strategies:
+
+```
+Content Memory System:
+- Topic Relationships: How subjects interconnect
+- Audience Insights: What resonates with different segments
+- Performance Patterns: What drives engagement
+- Narrative Continuity: Maintaining consistent messaging
+
+Memory Organization:
+- Content buckets by topic/campaign
+- Cross-referenced related content
+- Temporal tracking for content evolution
+- Semantic clustering for topic discovery
+
+Benefits:
+- Consistent brand voice across all content
+- Intelligent content recommendations
+- Automated content relationship mapping
+- Performance-based content optimization
+```
 
 ---
 
@@ -817,7 +1116,154 @@ CREATE OR REPLACE WAREHOUSE memory_box_realtime_warehouse
   MIN_CLUSTER_COUNT = 1
   MAX_CLUSTER_COUNT = 10
   SCALING_POLICY = 'ECONOMY'
-  COMMENT = 'Real-time agent responses and fraud detection';
+  COMMENT = 'Real-time agent responses and observability monitoring';
+
+-- Background processing warehouse for async operations
+CREATE OR REPLACE WAREHOUSE memory_box_async_warehouse
+  WAREHOUSE_SIZE = 'LARGE'
+  AUTO_SUSPEND = 300
+  AUTO_RESUME = TRUE
+  MIN_CLUSTER_COUNT = 1
+  MAX_CLUSTER_COUNT = 3
+  SCALING_POLICY = 'ECONOMY'
+  COMMENT = 'Asynchronous memory processing and bulk operations';
+```
+
+### **Intelligent Fallback Mechanisms**
+
+Memory Box implements sophisticated fallback strategies to ensure reliable operation:
+
+```sql
+CREATE OR REPLACE PROCEDURE intelligent_fallback_handler(
+    operation_type STRING,
+    primary_method OBJECT,
+    context OBJECT
+)
+RETURNS OBJECT
+LANGUAGE SQL
+AS
+$$
+BEGIN
+    LET result OBJECT;
+    LET fallback_level INTEGER := 0;
+    
+    -- Level 1: Primary semantic search
+    IF operation_type = 'search' THEN
+        TRY
+            CALL semantic_search_memories(:context) INTO :result;
+            IF :result:count > 0 THEN
+                RETURN :result;
+            END IF;
+        CATCH
+            -- Continue to fallback
+        END TRY;
+        
+        -- Level 2: Hybrid search with keyword boost
+        TRY
+            CALL hybrid_search_memories(:context) INTO :result;
+            IF :result:count > 0 THEN
+                RETURN :result;
+            END IF;
+        CATCH
+            -- Continue to fallback
+        END TRY;
+        
+        -- Level 3: Pure text search fallback
+        CALL text_search_memories(:context) INTO :result;
+        RETURN :result;
+    END IF;
+    
+    -- Model selection fallback
+    IF operation_type = 'model_selection' THEN
+        -- Try primary model
+        TRY
+            CALL execute_with_model(:primary_method:model, :context) INTO :result;
+            RETURN :result;
+        CATCH
+            -- Fallback to secondary models
+            IF :primary_method:fallback_model IS NOT NULL THEN
+                CALL execute_with_model(:primary_method:fallback_model, :context) INTO :result;
+                RETURN :result;
+            ELSE
+                -- Ultimate fallback to Snowflake Cortex
+                CALL execute_with_cortex_claude(:context) INTO :result;
+                RETURN :result;
+            END IF;
+        END TRY;
+    END IF;
+END;
+$$;
+```
+
+### **Usage Analytics & Plan Management**
+
+```sql
+-- Comprehensive usage tracking and analytics
+CREATE OR REPLACE VIEW memory_box_usage_analytics AS
+SELECT 
+    -- Organization metrics
+    o.organization_id,
+    o.organization_name,
+    o.service_tier,
+    
+    -- Usage statistics
+    COUNT(DISTINCT m.agent_id) as active_agents,
+    COUNT(DISTINCT m.bucket_name) as active_buckets,
+    COUNT(m.memory_id) as total_memories,
+    SUM(m.api_calls_count) as total_api_calls,
+    SUM(m.tokens_processed) as total_tokens,
+    SUM(m.cost_accumulated) as total_cost_usd,
+    
+    -- Performance metrics
+    AVG(m.access_frequency) as avg_memory_access,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY m.effectiveness_score) as median_effectiveness,
+    
+    -- Plan management
+    CASE o.service_tier
+        WHEN 'professional' THEN 100000 - SUM(m.tokens_processed)
+        WHEN 'enterprise' THEN 1000000 - SUM(m.tokens_processed)
+        WHEN 'enterprise_plus' THEN NULL  -- Unlimited
+    END as tokens_remaining,
+    
+    -- Time-based analytics
+    DATE_TRUNC('day', CURRENT_TIMESTAMP) as analysis_date,
+    COUNT(CASE WHEN m.created_timestamp >= CURRENT_TIMESTAMP - INTERVAL '24 hours' 
+          THEN 1 END) as memories_last_24h,
+    COUNT(CASE WHEN m.created_timestamp >= CURRENT_TIMESTAMP - INTERVAL '7 days' 
+          THEN 1 END) as memories_last_7d
+    
+FROM organizations o
+JOIN agent_memory_objects m ON o.organization_id = m.organization_id
+WHERE m.created_timestamp >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+GROUP BY o.organization_id, o.organization_name, o.service_tier;
+
+-- Admin dashboard for system-wide statistics
+CREATE OR REPLACE VIEW admin_dashboard_metrics AS
+SELECT 
+    -- System health
+    COUNT(DISTINCT organization_id) as total_organizations,
+    COUNT(DISTINCT agent_id) as total_agents,
+    COUNT(*) as total_memories,
+    
+    -- Processing status
+    SUM(CASE WHEN processing_status = 'pending' THEN 1 ELSE 0 END) as pending_memories,
+    SUM(CASE WHEN processing_status = 'processing' THEN 1 ELSE 0 END) as processing_memories,
+    SUM(CASE WHEN processing_status = 'failed' THEN 1 ELSE 0 END) as failed_memories,
+    
+    -- Model usage distribution
+    COUNT(DISTINCT created_by_model) as unique_models_used,
+    MODE(created_by_model) as most_used_model,
+    
+    -- Cost analytics
+    SUM(cost_accumulated) as total_platform_cost,
+    AVG(cost_accumulated / NULLIF(tokens_processed, 0)) as avg_cost_per_token,
+    
+    -- Performance indicators
+    AVG(effectiveness_score) as platform_avg_effectiveness,
+    PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY access_frequency) as p95_access_frequency
+    
+FROM agent_memory_objects
+WHERE created_timestamp >= CURRENT_TIMESTAMP - INTERVAL '30 days';
 ```
 
 ### **Cost Optimization with Multi-Model Strategy**
@@ -895,34 +1341,60 @@ ORDER BY analysis_date DESC, total_cost_usd DESC;
 
 ## **Enterprise Use Cases**
 
-### **Use Case 1: Financial Services Risk Management**
+### **Use Case 1: Financial Services Risk Management for Data Service Providers**
 
-**Challenge:** Large bank needs to assess credit risk across diverse customer segments with varying complexity levels, while maintaining regulatory compliance and cost efficiency.
+**Challenge:** Financial data service provider (like Equifax) needs to offer AI-powered risk assessment to multiple financial institution clients while maintaining complete data segregation and sovereignty within Snowflake.
 
 **Memory Box Solution:**
 ```
+Multi-Tenant Architecture:
+- Dedicated memory buckets per financial institution client
+- Shared industry risk patterns in common buckets (with permissions)
+- Client-specific compliance rules in isolated memory pods
+- Cross-institutional insights with privacy preservation
+
+Advanced Memory Features:
+- Hybrid Search: Combine regulatory keywords with semantic risk patterns
+- Related Memories: Auto-discover similar risk scenarios across portfolios
+- Date-Sorted Results: Critical for regulatory audit trails (Dodd-Frank, Basel III)
+- Debug Mode: Full transparency for regulatory examinations
+- Fallback Mechanisms: Ensure 99.99% availability for real-time decisions
+
 Agent Configuration:
-- Standard Customers: Claude 3.5 (Snowflake Cortex) - Fast, cost-effective
-- Complex Cases: GPT-4 (Azure OpenAI) - Deep reasoning capability
-- Regulatory Review: Llama 3 (Self-hosted) - Zero external API calls
-- Reporting: Gemini Pro (Vertex AI) - Advanced synthesis
+- Standard Risk Assessment: Claude 3.5 (Snowflake Cortex) - $0.003/1K tokens
+- Complex Portfolio Analysis: GPT-4 (Azure OpenAI) - Advanced reasoning
+- Regulatory Compliance: Llama 3 (Self-hosted) - Zero data egress
+- Cross-Client Intelligence: Gemini Pro - Pattern synthesis
+
+Shared Bucket Benefits:
+- Industry Risk Patterns bucket (read-only for all clients)
+- Regulatory Interpretations bucket (admin-controlled updates)
+- Market Conditions bucket (real-time updates, shared read access)
+- Client-Specific Risk bucket (isolated per institution)
 
 Universal Memory Layer:
-- All agents share accumulated risk insights
-- Cross-model consensus on edge cases
-- Historical decision patterns inform future assessments
-- Model-agnostic memory enables seamless transitions
+- Historical risk patterns preserved across model changes
+- Cross-model validation for high-value decisions
+- Institutional knowledge retained through staff changes
+- Seamless model migration without retraining
+
+Compliance & Governance:
+- Complete audit trail with attribution (created_by tracking)
+- Permission-based memory sharing (read-only, read-write, admin)
+- Data classification enforcement (PII, Financial, Public)
+- GDPR-compliant deletion scheduling
 
 Business Results:
-- 40% cost reduction through optimal model selection
-- 60% faster processing for standard cases
-- 100% compliance with data residency requirements
-- Zero vendor lock-in risk
+- 40% reduction in AI infrastructure costs
+- 60% faster onboarding of new financial institution clients
+- 100% data residency compliance (no data leaves Snowflake)
+- 75% improvement in risk assessment accuracy through shared learnings
+- Zero vendor lock-in with model portability
 ```
 
 ### **Use Case 2: Insurance Claims Processing**
 
-**Challenge:** Insurance company needs AI-powered claims processing with fraud detection, regulatory compliance, and cost control across millions of annual claims.
+**Challenge:** Insurance company needs AI-powered claims processing with AI observability, regulatory compliance, and cost control across millions of annual claims.
 
 **Memory Box Solution:**
 ```
@@ -931,9 +1403,9 @@ Multi-Model Workflow:
    - Fast classification of straightforward claims
    - $0.003 per 1K tokens
    
-2. Fraud Analysis (GPT-4 for suspicious patterns)
-   - Deep analysis only when triggered
-   - Higher cost justified by fraud prevention
+2. Complex Claims Analysis (GPT-4 for edge cases)
+   - Deep analysis for complex claim scenarios
+   - Higher cost justified by accuracy requirements
    
 3. Compliance Validation (Self-hosted Llama)
    - Sensitive data never leaves Snowflake
@@ -943,16 +1415,24 @@ Multi-Model Workflow:
    - Context-aware responses
    - Accumulated knowledge from previous steps
 
+AI Observability Integration:
+- LLM-as-a-judge evaluations for claim decisions
+- Performance metrics and model comparisons
+- Trace analysis for decision transparency
+- Context relevance scoring for documentation review
+- Answer groundedness for claim assessment accuracy
+
 Memory Intelligence:
-- Fraud patterns detected by any model available to all
+- Claim patterns available across all models
 - Claim precedents inform future decisions
 - Customer communication history preserved
 - Agent learning improves accuracy over time
 
 ROI:
 - 50% reduction in AI costs through model optimization
-- 30% improvement in fraud detection
+- 35% improvement in claim processing accuracy
 - 100% compliance with insurance regulations
+- Complete audit trail with AI Observability
 - Seamless model upgrades without knowledge loss
 ```
 
@@ -1023,7 +1503,7 @@ Compliance:
 
 **Specialized Agents**
 - [ ] Deploy Risk Assessment agents
-- [ ] Configure Fraud Detection agents
+- [ ] Configure AI Observability agents
 - [ ] Implement Compliance Monitoring agents
 - [ ] Activate Business Intelligence agents
 
